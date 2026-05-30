@@ -19,7 +19,7 @@ end))
 
 local function import(path)
     local baseUrl = getgenv().OP1NIBBLER_BASE_URL or
-                        "https://raw.githubusercontent.com/potanginamo373-lang/troll/main"
+                        "https://raw.githubusercontent.com/buhayhayahay332-lang/rage/main/"
 
     if game.HttpGet and baseUrl and #baseUrl > 0 then
         local url = baseUrl .. path
@@ -145,8 +145,8 @@ local uiEntry = loadRemoteUI()
 if uiEntry then
     uiEntry(ctx, Modules)
 else
-    warn("[Op1Nibbler] Remote UI failed, falling back to local ui.lua")
-    import("modules/ui.lua")(ctx, Modules)
+    warn("[Op1Nibbler] Remote UI failed")
+    return
 end
 
 getgenv().Op1NibblerModules = Modules
