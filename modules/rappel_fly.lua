@@ -40,6 +40,7 @@ return function(ctx)
         enabled = false,
         speed = config.speed,
         pullSpeed = config.pull_speed,
+        flyKey = config.fly_key,
         _initialized = false
     }
 
@@ -434,6 +435,16 @@ return function(ctx)
                 grappleSelfRef.move_position.MaxVelocity = value
             end)
         end
+    end
+
+    function M:SetFlyKey(value)
+        if typeof(value) == "EnumItem" and value.EnumType == Enum.KeyCode then
+            config.fly_key = value
+        elseif type(value) == "string" and Enum.KeyCode[value] then
+            config.fly_key = Enum.KeyCode[value]
+        end
+
+        self.flyKey = config.fly_key
     end
 
     return M
