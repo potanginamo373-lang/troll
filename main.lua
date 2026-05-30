@@ -19,7 +19,7 @@ end))
 
 local function import(path)
     local baseUrl = getgenv().OP1NIBBLER_BASE_URL or
-                        "https://raw.githubusercontent.com/potanginamo373-lang/troll/main"
+                        "https://raw.githubusercontent.com/buhayhayahay332-lang/rage/main/"
 
     if game.HttpGet and baseUrl and #baseUrl > 0 then
         local url = baseUrl .. path
@@ -122,6 +122,31 @@ Modules.ESP:Init()
 Modules.NoSmokeFlash:Init()
 Modules.RappelFly:Init()
 
-import("modules/ui.lua")(ctx, Modules)
+local function loadRemoteUI()
+    local url = "https://raw.githubusercontent.com/PLU3t0/Meathead/main/OperationOne-main/fur_lib.lua"
+    local okHttp, source = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if okHttp and source and #source > 0 and type(loadstring) == "function" then
+        local uiChunk = loadstring(source, "@" .. url)
+        if uiChunk then
+            local okUi, uiFn = pcall(uiChunk)
+            if okUi and type(uiFn) == "function" then
+                return uiFn
+            end
+        end
+    end
+
+    return nil
+end
+
+local uiEntry = loadRemoteUI()
+if uiEntry then
+    uiEntry(ctx, Modules)
+else
+    warn("[Op1Nibbler] Remote UI failed, falling back to local ui.lua")
+    import("modules/ui.lua")(ctx, Modules)
+end
 
 getgenv().Op1NibblerModules = Modules
