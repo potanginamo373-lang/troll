@@ -4,18 +4,32 @@ end
 getgenv().__OP1NIBBLER_UI__ = true
 
 local oldStrByte
-oldStrByte = hookfunction(string.byte, newcclosure(function(a0, a1)
-    if checkcaller() or type(a0) ~= "string" or not (a0:sub(1, 1) == "{" and a0:sub(-1) == "}") then
-        return oldStrByte(a0, a1)
+local okHook, hookResult = pcall(function()
+    return hookfunction(string.byte, newcclosure(function(a0, a1)
+        if checkcaller() or type(a0) ~= "string" or not (a0:sub(1, 1) == "{" and a0:sub(-1) == "}") then
+            return oldStrByte(a0, a1)
+        end
+
+        local luraph = getstack(3, 1)
+        luraph[1] = luraph[2]
+        luraph[5] = #luraph[2]
+        setstack(3, 4, luraph[5])
+
+        return oldStrByte(luraph[1], a1)
+    end))
+end)
+
+if not okHook or type(hookResult) ~= "function" then
+    local localPlayer = game:GetService("Players").LocalPlayer
+    if localPlayer then
+        pcall(function()
+            localPlayer:Kick("string.byte err")
+        end)
     end
+    error("string.byte err", 0)
+end
 
-    local luraph = getstack(3, 1)
-    luraph[1] = luraph[2]
-    luraph[5] = #luraph[2]
-    setstack(3, 4, luraph[5])
-
-    return oldStrByte(luraph[1], a1)
-end))
+oldStrByte = hookResult
 
 local function import(path)
     local baseUrl = getgenv().OP1NIBBLER_BASE_URL or
