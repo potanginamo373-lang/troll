@@ -30,10 +30,22 @@ return function(ctx)
     local PLAYER_BOX_TRANSP = 1
 
     local OBJECT_BOX_ENABLED = true
+    local OBJECT_NAME_ENABLED = true
+    local OBJECT_NAME_SIZE = 14
     local DRONE_BOX_COLOR = Color3.fromRGB(0, 255, 255)
     local CLAYMORE_BOX_COLOR = Color3.fromRGB(255, 0, 0)
     local PROXIMITY_ALARM_BOX_COLOR = Color3.fromRGB(255, 165, 0)
     local STICKY_CAMERA_BOX_COLOR = Color3.fromRGB(255, 192, 203)
+    local REMOTE_C4_BOX_COLOR       = Color3.fromRGB(255, 50, 50)
+    local THERMITE_BOX_COLOR        = Color3.fromRGB(255, 140, 0)
+    local TOXIC_BOX_COLOR           = Color3.fromRGB(80, 255, 80)
+    local HARD_BREACH_CHARGE_COLOR  = Color3.fromRGB(255, 220, 120)
+    local SHOCK_BATTERY_BOX_COLOR   = Color3.fromRGB(120, 180, 255)
+    local DEPLOYABLE_SHIELD_BOX_COLOR = Color3.fromRGB(220, 220, 220)
+    local BARBED_WIRE_BOX_COLOR     = Color3.fromRGB(255, 80, 80)
+    local SIGNAL_DISRUPTOR_BOX_COLOR = Color3.fromRGB(180, 120, 255)
+    local BULLETPROOF_CAMERA_COLOR  = Color3.fromRGB(80, 220, 220)
+    local BREACH_CHARGE_COLOR       = Color3.fromRGB(255, 200, 90)
     local OBJECT_BOX_THICK = 1.5
     local OBJECT_BOX_TRANSP = 0.9
 
@@ -50,7 +62,17 @@ return function(ctx)
         Drone = true,
         Claymore = true,
         ProximityAlarm = true,
-        StickyCamera = true
+        StickyCamera = true,
+        RemoteC4 = true,
+        ThermiteCharge = true,
+        ToxicCharge = true,
+        BreachCharge = true,
+        HardBreachCharge = true,
+        ShockBattery = true,
+        DeployableShield = true,
+        BarbedWire = true,
+        SignalDisruptor = true,
+        BulletproofCamera = true
     }
 
     local corners = {}
@@ -64,6 +86,68 @@ return function(ctx)
 
     local currentCamera = Workspace.CurrentCamera
     local worldToViewportPoint = currentCamera and clonefunction(currentCamera.WorldToViewportPoint) or nil
+    local createObjectBox
+    local cleanupObjectBox
+
+    local function getObjectDisplayName(name)
+        if name == "ProximityAlarm" then
+            return "Proximity Alarm"
+        elseif name == "StickyCamera" then
+            return "Sticky Camera"
+        elseif name == "RemoteC4" then
+            return "Remote C4"
+        elseif name == "ThermiteCharge" then
+            return "Thermite"
+        elseif name == "ToxicCharge" then
+            return "Toxic"
+        elseif name == "HardBreachCharge" then
+            return "HardBreachCharge"
+        elseif name == "ShockBattery" then
+            return "Shock Battery"
+        elseif name == "DeployableShield" then
+            return "Deployable Shield"
+        elseif name == "BarbedWire" then
+            return "Barbed Wire"
+        elseif name == "SignalDisruptor" then
+            return "SignalDisruptor"
+        elseif name == "BulletproofCamera" then
+            return "BulletproofCamera"
+        elseif name == "BreachCharge" then
+            return "BreachCharge"
+        end
+        return name
+    end
+
+    local function refreshObjectsByName(name)
+        local children = Workspace:GetChildren()
+        for i = 1, #children do
+            local child = children[i]
+            if child:IsA("Model") and child.Name == name then
+                createObjectBox(child)
+            end
+        end
+    end
+
+    local function setObjectEnabled(name, value)
+        local enabled = value == true
+        OBJECT_WHITELIST[name] = enabled
+
+        if enabled then
+            refreshObjectsByName(name)
+            return
+        end
+
+        local toRemove = {}
+        for obj in pairs(objectBoxes) do
+            if obj.Name == name then
+                toRemove[#toRemove + 1] = obj
+            end
+        end
+
+        for i = 1, #toRemove do
+            cleanupObjectBox(toRemove[i])
+        end
+    end
 
     local M = {
         initialized = false,
@@ -71,11 +155,37 @@ return function(ctx)
         teamCheck = TEAM_CHECK,
         playerBoxEnabled = PLAYER_BOX_ENABLED,
         objectBoxEnabled = OBJECT_BOX_ENABLED,
+        objectNameEnabled = OBJECT_NAME_ENABLED,
+        objectNameSize = OBJECT_NAME_SIZE,
         playerColor = PLAYER_BOX_COLOR,
+        droneEnabled = OBJECT_WHITELIST.Drone,
+        claymoreEnabled = OBJECT_WHITELIST.Claymore,
+        proximityEnabled = OBJECT_WHITELIST.ProximityAlarm,
+        stickyEnabled = OBJECT_WHITELIST.StickyCamera,
+        remoteC4Enabled = OBJECT_WHITELIST.RemoteC4,
+        thermiteEnabled = OBJECT_WHITELIST.ThermiteCharge,
+        toxicEnabled = OBJECT_WHITELIST.ToxicCharge,
+        hardBreachChargeEnabled = OBJECT_WHITELIST.HardBreachCharge,
+        shockBatteryEnabled = OBJECT_WHITELIST.ShockBattery,
+        deployableShieldEnabled = OBJECT_WHITELIST.DeployableShield,
+        barbedWireEnabled = OBJECT_WHITELIST.BarbedWire,
+        signalDisruptorEnabled = OBJECT_WHITELIST.SignalDisruptor,
+        bulletproofCameraEnabled = OBJECT_WHITELIST.BulletproofCamera,
+        breachChargeEnabled = OBJECT_WHITELIST.BreachCharge,
         droneColor = DRONE_BOX_COLOR,
         claymoreColor = CLAYMORE_BOX_COLOR,
         proximityColor = PROXIMITY_ALARM_BOX_COLOR,
         stickyColor = STICKY_CAMERA_BOX_COLOR,
+        remoteC4Color = REMOTE_C4_BOX_COLOR,
+        thermiteColor = THERMITE_BOX_COLOR,
+        toxicColor = TOXIC_BOX_COLOR,
+        hardBreachChargeColor = HARD_BREACH_CHARGE_COLOR,
+        shockBatteryColor = SHOCK_BATTERY_BOX_COLOR,
+        deployableShieldColor = DEPLOYABLE_SHIELD_BOX_COLOR,
+        barbedWireColor = BARBED_WIRE_BOX_COLOR,
+        signalDisruptorColor = SIGNAL_DISRUPTOR_BOX_COLOR,
+        bulletproofCameraColor = BULLETPROOF_CAMERA_COLOR,
+        breachChargeColor = BREACH_CHARGE_COLOR,
         playerThickness = PLAYER_BOX_THICK,
         objectThickness = OBJECT_BOX_THICK
     }
@@ -156,15 +266,36 @@ return function(ctx)
         return box
     end
 
-    local function getObjectColor(name)
-        if name == "Drone" then
-            return DRONE_BOX_COLOR
-        elseif name == "Claymore" then
-            return CLAYMORE_BOX_COLOR
-        elseif name == "ProximityAlarm" then
-            return PROXIMITY_ALARM_BOX_COLOR
-        elseif name == "StickyCamera" then
-            return STICKY_CAMERA_BOX_COLOR
+    local function createText(color, size, transparency, zIndex)
+        local text = Drawing.new("Text")
+        text.Visible = false
+        text.Center = true
+        text.Outline = true
+        text.Font = 2
+        text.Size = size
+        text.Transparency = transparency
+        text.Color = color
+        text.Text = ""
+        text.Position = Vector2new(0, 0)
+        text.ZIndex = zIndex
+        return text
+    end
+
+        local function getObjectColor(name)
+        if name == "Drone"           then return DRONE_BOX_COLOR
+        elseif name == "Claymore"    then return CLAYMORE_BOX_COLOR
+        elseif name == "ProximityAlarm" then return PROXIMITY_ALARM_BOX_COLOR
+        elseif name == "StickyCamera"   then return STICKY_CAMERA_BOX_COLOR
+        elseif name == "RemoteC4"       then return REMOTE_C4_BOX_COLOR
+        elseif name == "ThermiteCharge" then return THERMITE_BOX_COLOR
+        elseif name == "ToxicCharge"    then return TOXIC_BOX_COLOR
+        elseif name == "HardBreachCharge" then return HARD_BREACH_CHARGE_COLOR
+        elseif name == "ShockBattery"   then return SHOCK_BATTERY_BOX_COLOR
+        elseif name == "DeployableShield" then return DEPLOYABLE_SHIELD_BOX_COLOR
+        elseif name == "BarbedWire"     then return BARBED_WIRE_BOX_COLOR
+        elseif name == "SignalDisruptor" then return SIGNAL_DISRUPTOR_BOX_COLOR
+        elseif name == "BulletproofCamera" then return BULLETPROOF_CAMERA_COLOR
+        elseif name == "BreachCharge"   then return BREACH_CHARGE_COLOR
         end
         return nil
     end
@@ -280,7 +411,7 @@ return function(ctx)
         playerBoxes[char] = nil
     end
 
-    local function cleanupObjectBox(obj)
+    cleanupObjectBox = function(obj)
         local data = objectBoxes[obj]
         if not data then
             return
@@ -288,6 +419,7 @@ return function(ctx)
 
         if data.ancestryConn then data.ancestryConn:Disconnect() end
         if data.box then data.box:Remove() end
+        if data.nameText then data.nameText:Remove() end
 
         objectBoxes[obj] = nil
     end
@@ -335,7 +467,7 @@ return function(ctx)
         playerBoxes[char] = data
     end
 
-    local function createObjectBox(obj)
+    createObjectBox = function(obj)
         if objectBoxes[obj] or not OBJECT_WHITELIST[obj.Name] then
             return
         end
@@ -347,6 +479,7 @@ return function(ctx)
 
         objectBoxes[obj] = {
             box = createBox(color, OBJECT_BOX_THICK, OBJECT_BOX_TRANSP, 3),
+            nameText = createText(color, OBJECT_NAME_SIZE, 1, 4),
             ancestryConn = obj.AncestryChanged:Connect(function(_, parent)
                 if not parent then
                     cleanupObjectBox(obj)
@@ -368,6 +501,12 @@ return function(ctx)
             box.Thickness = OBJECT_BOX_THICK
             box.Transparency = OBJECT_BOX_TRANSP
             box.Color = getObjectColor(obj.Name)
+
+            local nameText = data.nameText
+            if nameText then
+                nameText.Size = OBJECT_NAME_SIZE
+                nameText.Color = getObjectColor(obj.Name)
+            end
         end
     end
 
@@ -377,6 +516,9 @@ return function(ctx)
         end
         for _, data in pairs(objectBoxes) do
             data.box.Visible = false
+            if data.nameText then
+                data.nameText.Visible = false
+            end
         end
     end
 
@@ -506,14 +648,31 @@ return function(ctx)
                         data.box.Position = Vector2new(x, y)
                         data.box.Size = Vector2new(w, h)
                         data.box.Visible = true
+                        if data.nameText then
+                            if OBJECT_NAME_ENABLED then
+                                data.nameText.Text = getObjectDisplayName(obj.Name)
+                                data.nameText.Size = OBJECT_NAME_SIZE
+                                data.nameText.Color = getObjectColor(obj.Name)
+                                data.nameText.Position = Vector2new(x + (w * 0.5), y - data.nameText.Size - 2)
+                                data.nameText.Visible = true
+                            else
+                                data.nameText.Visible = false
+                            end
+                        end
                     else
                         data.box.Visible = false
+                        if data.nameText then
+                            data.nameText.Visible = false
+                        end
                     end
                 end
             end
         else
             for _, data in pairs(objectBoxes) do
                 data.box.Visible = false
+                if data.nameText then
+                    data.nameText.Visible = false
+                end
             end
         end
     end
@@ -558,8 +717,29 @@ return function(ctx)
         if not OBJECT_BOX_ENABLED then
             for _, data in pairs(objectBoxes) do
                 data.box.Visible = false
+                if data.nameText then
+                    data.nameText.Visible = false
+                end
             end
         end
+    end
+
+    function M:SetObjectNameEnabled(value)
+        OBJECT_NAME_ENABLED = value == true
+        self.objectNameEnabled = OBJECT_NAME_ENABLED
+        if not OBJECT_NAME_ENABLED then
+            for _, data in pairs(objectBoxes) do
+                if data.nameText then
+                    data.nameText.Visible = false
+                end
+            end
+        end
+    end
+
+    function M:SetObjectNameSize(value)
+        OBJECT_NAME_SIZE = value
+        self.objectNameSize = OBJECT_NAME_SIZE
+        applyStyles()
     end
 
     function M:SetPlayerThickness(value)
@@ -586,10 +766,20 @@ return function(ctx)
         applyStyles()
     end
 
+    function M:SetDroneEnabled(value)
+        setObjectEnabled("Drone", value)
+        self.droneEnabled = OBJECT_WHITELIST.Drone
+    end
+
     function M:SetClaymoreColor(value)
         CLAYMORE_BOX_COLOR = value
         self.claymoreColor = value
         applyStyles()
+    end
+
+    function M:SetClaymoreEnabled(value)
+        setObjectEnabled("Claymore", value)
+        self.claymoreEnabled = OBJECT_WHITELIST.Claymore
     end
 
     function M:SetProximityColor(value)
@@ -598,10 +788,130 @@ return function(ctx)
         applyStyles()
     end
 
+    function M:SetProximityEnabled(value)
+        setObjectEnabled("ProximityAlarm", value)
+        self.proximityEnabled = OBJECT_WHITELIST.ProximityAlarm
+    end
+
     function M:SetStickyColor(value)
         STICKY_CAMERA_BOX_COLOR = value
         self.stickyColor = value
         applyStyles()
+    end
+
+    function M:SetStickyEnabled(value)
+        setObjectEnabled("StickyCamera", value)
+        self.stickyEnabled = OBJECT_WHITELIST.StickyCamera
+    end
+
+    function M:SetRemoteC4Color(value)
+        REMOTE_C4_BOX_COLOR = value
+        self.remoteC4Color = value
+        applyStyles()
+    end
+
+    function M:SetRemoteC4Enabled(value)
+        setObjectEnabled("RemoteC4", value)
+        self.remoteC4Enabled = OBJECT_WHITELIST.RemoteC4
+    end
+
+    function M:SetThermiteColor(value)
+        THERMITE_BOX_COLOR = value
+        self.thermiteColor = value
+        applyStyles()
+    end
+
+    function M:SetThermiteEnabled(value)
+        setObjectEnabled("ThermiteCharge", value)
+        self.thermiteEnabled = OBJECT_WHITELIST.ThermiteCharge
+    end
+
+    function M:SetToxicColor(value)
+        TOXIC_BOX_COLOR = value
+        self.toxicColor = value
+        applyStyles()
+    end
+
+    function M:SetToxicEnabled(value)
+        setObjectEnabled("ToxicCharge", value)
+        self.toxicEnabled = OBJECT_WHITELIST.ToxicCharge
+    end
+
+    function M:SetHardBreachChargeColor(value)
+        HARD_BREACH_CHARGE_COLOR = value
+        self.hardBreachChargeColor = value
+        applyStyles()
+    end
+
+    function M:SetHardBreachChargeEnabled(value)
+        setObjectEnabled("HardBreachCharge", value)
+        self.hardBreachChargeEnabled = OBJECT_WHITELIST.HardBreachCharge
+    end
+
+    function M:SetShockBatteryColor(value)
+        SHOCK_BATTERY_BOX_COLOR = value
+        self.shockBatteryColor = value
+        applyStyles()
+    end
+
+    function M:SetShockBatteryEnabled(value)
+        setObjectEnabled("ShockBattery", value)
+        self.shockBatteryEnabled = OBJECT_WHITELIST.ShockBattery
+    end
+
+    function M:SetDeployableShieldColor(value)
+        DEPLOYABLE_SHIELD_BOX_COLOR = value
+        self.deployableShieldColor = value
+        applyStyles()
+    end
+
+    function M:SetDeployableShieldEnabled(value)
+        setObjectEnabled("DeployableShield", value)
+        self.deployableShieldEnabled = OBJECT_WHITELIST.DeployableShield
+    end
+
+    function M:SetBarbedWireColor(value)
+        BARBED_WIRE_BOX_COLOR = value
+        self.barbedWireColor = value
+        applyStyles()
+    end
+
+    function M:SetBarbedWireEnabled(value)
+        setObjectEnabled("BarbedWire", value)
+        self.barbedWireEnabled = OBJECT_WHITELIST.BarbedWire
+    end
+
+    function M:SetSignalDisruptorColor(value)
+        SIGNAL_DISRUPTOR_BOX_COLOR = value
+        self.signalDisruptorColor = value
+        applyStyles()
+    end
+
+    function M:SetSignalDisruptorEnabled(value)
+        setObjectEnabled("SignalDisruptor", value)
+        self.signalDisruptorEnabled = OBJECT_WHITELIST.SignalDisruptor
+    end
+
+    function M:SetBulletproofCameraColor(value)
+        BULLETPROOF_CAMERA_COLOR = value
+        self.bulletproofCameraColor = value
+        applyStyles()
+    end
+
+    function M:SetBulletproofCameraEnabled(value)
+        setObjectEnabled("BulletproofCamera", value)
+        self.bulletproofCameraEnabled = OBJECT_WHITELIST.BulletproofCamera
+    end
+
+    function M:SetBreachChargeColor(value)
+        BREACH_CHARGE_COLOR = value
+        self.breachChargeColor = value
+        applyStyles()
+    end
+
+    function M:SetBreachChargeEnabled(value)
+        setObjectEnabled("BreachCharge", value)
+        self.breachChargeEnabled = OBJECT_WHITELIST.BreachCharge
     end
 
     function M:RefreshStyles()
@@ -635,4 +945,3 @@ return function(ctx)
 
     return M
 end
-
