@@ -256,14 +256,89 @@ return function(ctx)
     end
 
     local function createBox(color, thickness, transparency, zIndex)
-        local box = Drawing.new("Square")
-        box.Visible = false
-        box.Filled = false
-        box.Thickness = thickness
-        box.Transparency = transparency
-        box.Color = color
-        box.ZIndex = zIndex
-        return box
+        local lines = {}
+        local state = {
+            Position = Vector2new(0, 0),
+            Size = Vector2new(0, 0),
+            Visible = false,
+            Color = color,
+            Thickness = thickness,
+            Transparency = transparency,
+            ZIndex = zIndex
+        }
+
+        local function setLineProp(line, prop, value)
+            if line then
+                pcall(function()
+                    line[prop] = value
+                end)
+            end
+        end
+
+        for i = 1, 4 do
+            local okLine, line = pcall(function()
+                return Drawing.new("Line")
+            end)
+            if not okLine then
+                line = nil
+            end
+            setLineProp(line, "Visible", false)
+            setLineProp(line, "Thickness", thickness)
+            setLineProp(line, "Transparency", transparency)
+            setLineProp(line, "Color", color)
+            setLineProp(line, "ZIndex", zIndex)
+            lines[i] = line
+        end
+
+        local function updateLines()
+            local pos = state.Position or Vector2new(0, 0)
+            local size = state.Size or Vector2new(0, 0)
+            local x, y = pos.X, pos.Y
+            local w, h = size.X, size.Y
+            local visible = state.Visible == true and w > 0 and h > 0
+            local tl = Vector2new(x, y)
+            local tr = Vector2new(x + w, y)
+            local br = Vector2new(x + w, y + h)
+            local bl = Vector2new(x, y + h)
+            local pts = {{tl, tr}, {tr, br}, {br, bl}, {bl, tl}}
+
+            for i = 1, 4 do
+                local line = lines[i]
+                if line then
+                    setLineProp(line, "From", pts[i][1])
+                    setLineProp(line, "To", pts[i][2])
+                    setLineProp(line, "Visible", visible)
+                end
+            end
+        end
+
+        local box = {}
+        return setmetatable(box, {
+            __index = function(_, key)
+                if key == "Remove" then
+                    return function()
+                        for i = 1, 4 do
+                            local line = lines[i]
+                            if line then
+                                pcall(line.Remove, line)
+                                lines[i] = nil
+                            end
+                        end
+                    end
+                end
+                return state[key]
+            end,
+            __newindex = function(_, key, value)
+                state[key] = value
+                if key == "Position" or key == "Size" or key == "Visible" then
+                    updateLines()
+                elseif key == "Color" or key == "Thickness" or key == "Transparency" or key == "ZIndex" then
+                    for i = 1, 4 do
+                        setLineProp(lines[i], key, value)
+                    end
+                end
+            end
+        })
     end
 
     local function createText(color, size, transparency, zIndex)
@@ -945,3 +1020,5 @@ return function(ctx)
 
     return M
 end
+
+
